@@ -19,7 +19,18 @@ def index():
         f'<li><a href="/view?user={u}">{u}</a> | <a href="/history?user={u}">Historia</a></li>'
         for u in users
     ])
-    return f"<h1>Użytkownicy</h1><ul>{links}</ul><p><a href='/download'>⬇️ Pobierz klienta</a></p>"
+    return f"""
+        <h1>Użytkownicy</h1><ul>{links}</ul>
+        <p><a href='/download'>⬇️ Pobierz klienta (.exe/.zip)</a></p>
+        <p><a href='/latest_client.py'>📥 Pobierz aktualny client.py</a></p>
+    """
+
+@app.route("/latest_client.py")
+def latest_client():
+    path = os.path.join(CLIENT_DOWNLOAD_PATH, "latest_client.py")
+    if os.path.exists(path):
+        return send_file(path, mimetype="text/plain")
+    return "Brak aktualnej wersji klienta.", 404
 
 @app.route("/download")
 def download_client():
