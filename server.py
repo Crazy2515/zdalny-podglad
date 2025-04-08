@@ -7,24 +7,18 @@ import pytz
 app = Flask(__name__)
 UPLOAD_FOLDER = "screens"
 COMMAND_FOLDER = "commands"
-FILES_FOLDER = "remote_files"
-UPLOADS_TO_CLIENTS = "uploaded_files"
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(COMMAND_FOLDER, exist_ok=True)
-os.makedirs(FILES_FOLDER, exist_ok=True)
-os.makedirs(UPLOADS_TO_CLIENTS, exist_ok=True)
 
 POLAND = pytz.timezone("Europe/Warsaw")
 
 @app.route("/")
 def index():
-    users = os.listdir(UPLOAD_FOLDER)
+    users = sorted(os.listdir(UPLOAD_FOLDER))
     users = [u for u in users if os.path.isdir(os.path.join(UPLOAD_FOLDER, u))]
     links = "".join([
         f'<li><a href="/view?user={u}">{u}</a> | '
-        f'<a href="/files?user={u}">Pliki</a> | '
-        f'<a href="/upload_file?user={u}">Wyślij plik</a> | '
         f'<a href="/screens_list?user={u}">Screeny</a></li>'
         for u in users
     ])
