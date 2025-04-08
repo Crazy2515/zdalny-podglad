@@ -97,7 +97,7 @@ def upload():
     os.makedirs(folder, exist_ok=True)
 
     file = request.files['screenshot']
-    now = datetime.datetime.now(POLAND).strftime("%Y-%m-%d_%H-%M-%S")
+    now = (datetime.datetime.utcnow() + datetime.timedelta(hours=2)).strftime("%Y-%m-%d_%H-%M-%S")
     filename = f"screenshot_{now}.png"
     filepath = os.path.join(folder, filename)
     file.save(filepath)
