@@ -38,10 +38,10 @@ def index():
 
     content = f"<h1>Połączone urządzenia: {len(active_users)}</h1><ul>"
     for u, t in active_users:
-        content += f'<li>🟢 <a href="/view?user={u}">{u}</a> (ostatni screen: {t})</li>'
+        content += f'<li>🟢 <a href="/view?user={u}">{u}</a> (ostatni screen: {t}) | <a href="/history?user={u}">Historia</a></li>'
     content += "</ul><hr><h2>Nieaktywne: {}</h2><ul>".format(len(inactive_users))
     for u, t in inactive_users:
-        content += f'<li>🔴 {u} (ostatni screen: {t})</li>'
+        content += f'<li>🔴 {u} (ostatni screen: {t}) | <a href="/history?user={u}">Historia</a></li>'
     content += "</ul>"
     return content
 
