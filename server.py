@@ -28,7 +28,7 @@ def index():
 def get_screen(user, filename):
     path = os.path.join(UPLOAD_FOLDER, user, filename)
     if not os.path.exists(path):
-        return "Nie znaleziono screena", 404
+        return f"Nie znaleziono screena: {filename}", 404
     return send_file(path, mimetype='image/png')
 
 @app.route("/screens_list")
@@ -52,6 +52,18 @@ def view():
     user = request.args.get("user")
     if not user:
         return redirect(url_for("index"))
+
+    folder = os.path.join(UPLOAD_FOLDER, user)
+    if not os.path.exists(folder):
+        return "Brak użytkownika lub screenów", 404
+
+    files = sorted(os.listdir(folder))
+    if not files:
+        return "Brak screenów dla użytkownika", 404
+
+    latest_filename = files[-1]
+    latest_url = f"/screens/{user}/{latest_filename}"
+
     return render_template_string('''
         <html>
         <head>
@@ -59,49 +71,14 @@ def view():
             <style>
                 body { background: #111; color: white; text-align: center; font-family: sans-serif; }
                 img { max-width: 90%; border: 2px solid white; margin: 10px auto; display: block; }
-                .panel { margin-top: 20px; }
-                button { margin: 5px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
-                .status-box { margin-top: 20px; padding: 10px; background: #222; border: 1px solid #555; display: inline-block; }
             </style>
-            <script>
-                const user = "{{ user }}";
-                async function sendCommand(action) {
-                    await fetch("/command?user=" + user, {
-                        method: "POST",
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: "action=" + action
-                    });
-                    updateStatus();
-                }
-
-                async function updateStatus() {
-                    const res = await fetch("/command?user=" + user);
-                    const data = await res.json();
-                    document.getElementById("status").innerText = `Status: ${data.paused ? 'Zatrzymany' : 'Aktywny'} | Interwał: ${data.interval}s`;
-                }
-
-                setInterval(updateStatus, 3000);
-                window.onload = updateStatus;
-            </script>
         </head>
         <body>
             <h1>📸 Podgląd Ekranu: {{ user }}</h1>
-            <img src="/latest?user={{ user }}" />
-
-            <div class="panel">
-                <button onclick="sendCommand('one_shot')">Zrób screena teraz</button>
-                <button onclick="sendCommand('pause')">Pauza</button>
-                <button onclick="sendCommand('resume')">Start</button>
-                <button onclick="sendCommand('faster')">Szybciej</button>
-                <button onclick="sendCommand('slower')">Wolniej</button>
-            </div>
-
-            <div class="status-box" id="status">
-                Status: ładowanie...
-            </div>
+            <img src="{{ latest_url }}" />
         </body>
         </html>
-    ''', user=user)
+    ''', user=user, latest_url=latest_url)
 
 @app.route("/latest")
 def latest():
@@ -116,15 +93,18 @@ def latest():
 
 @app.route("/upload", methods=['POST'])
 def upload():
-    print("[UPLOAD] Odebrano żądanie POST")
-    print("[UPLOAD] request.form:", request.form)
-    print("[UPLOAD] request.files:", request.files)
-
     user = request.form.get("user")
     if not user:
-        print("[UPLOAD] Brak użytkownika!")
         return "Brak ID użytkownika", 400
+    user_folder = os.path.join(UPLOAD_FOLDER, user)
+    os.makedirs(user_folder, exist_ok=True)
 
+    file = request.files['screenshot']
+    now = datetime.datetime.now(POLAND).strftime("%Y-%m-%d_%H-%M-%S")
+    filename = f"screenshot_{now}.png"
+    filepath = os.path.join(user_folder, filename)
+    file.save(filepath)
+    return "OK"
 
 @app.route("/command", methods=['GET', 'POST'])
 def command():
