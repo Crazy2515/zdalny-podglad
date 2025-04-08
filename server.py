@@ -116,18 +116,15 @@ def latest():
 
 @app.route("/upload", methods=['POST'])
 def upload():
+    print("[UPLOAD] Odebrano żądanie POST")
+    print("[UPLOAD] request.form:", request.form)
+    print("[UPLOAD] request.files:", request.files)
+
     user = request.form.get("user")
     if not user:
+        print("[UPLOAD] Brak użytkownika!")
         return "Brak ID użytkownika", 400
-    user_folder = os.path.join(UPLOAD_FOLDER, user)
-    os.makedirs(user_folder, exist_ok=True)
 
-    file = request.files['screenshot']
-    now = datetime.datetime.now(POLAND).strftime("%Y-%m-%d_%H-%M-%S")
-    filename = f"screenshot_{now}.png"
-    filepath = os.path.join(user_folder, filename)
-    file.save(filepath)
-    return "OK"
 
 @app.route("/command", methods=['GET', 'POST'])
 def command():
