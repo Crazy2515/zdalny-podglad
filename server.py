@@ -14,13 +14,20 @@ def upload_file():
     print(f"Odebrano screena: {filepath}")
     return "OK"
 
-
 @app.route('/view')
 def view_screenshot():
-    filepath = os.path.join(UPLOAD_FOLDER, "latest.png")
+    filename = "latest.png"
+    filepath = os.path.join(UPLOAD_FOLDER, filename)
     if not os.path.exists(filepath):
         return "<h2>Brak screena! Czekam na pierwszy zrzut ekranu...</h2>", 200
     return send_file(filepath, mimetype='image/png')
+
+@app.route('/')
+def index():
+    return '''
+        <h1>👀 Zdalny Podgląd</h1>
+        <p>Przejdź do <a href="/view">/view</a>, aby zobaczyć ostatni ekran.</p>
+    '''
 
 if __name__ == "__main__":
     import os
