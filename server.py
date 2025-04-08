@@ -14,34 +14,30 @@ os.makedirs(COMMAND_FOLDER, exist_ok=True)
 def index():
     users = sorted(os.listdir(UPLOAD_FOLDER))
     now = datetime.datetime.utcnow()
-    active_users = []
-    inactive_users = []
+    device_list = []
 
     for u in users:
         folder = os.path.join(UPLOAD_FOLDER, u)
         files = sorted(os.listdir(folder))
         if not files:
-            inactive_users.append(u)
+            device_list.append((u, "🔴", "brak plików"))
             continue
         latest = files[-1]
         timestamp_str = latest.replace("screenshot_", "").replace(".png", "")
         try:
             timestamp = datetime.datetime.strptime(timestamp_str, "%Y-%m-%d_%H-%M-%S")
-            timestamp += datetime.timedelta(hours=2)  # dopasowanie do czasu PL
+            timestamp += datetime.timedelta(hours=2)
             diff = (now - timestamp).total_seconds()
             if diff < 60:
-                active_users.append((u, timestamp.strftime("%H:%M:%S")))
+                device_list.append((u, "🟢", timestamp.strftime("%H:%M:%S")))
             else:
-                inactive_users.append((u, timestamp.strftime("%H:%M:%S")))
+                device_list.append((u, "🔴", timestamp.strftime("%H:%M:%S")))
         except:
-            inactive_users.append((u, "błąd daty"))
+            device_list.append((u, "🔴", "błąd daty"))
 
-    content = f"<h1>Połączone urządzenia: {len(active_users)}</h1><ul>"
-    for u, t in active_users:
-        content += f'<li>🟢 <a href="/view?user={u}">{u}</a> (ostatni screen: {t}) | <a href="/history?user={u}">Historia</a></li>'
-    content += "</ul><hr><h2>Nieaktywne: {}</h2><ul>".format(len(inactive_users))
-    for u, t in inactive_users:
-        content += f'<li>🔴 {u} (ostatni screen: {t}) | <a href="/history?user={u}">Historia</a></li>'
+    content = f"<h1>Urządzenia: {len(device_list)}</h1><ul>"
+    for u, status, t in device_list:
+        content += f'<li>{status} <a href="/view?user={u}">{u}</a> (ostatni screen: {t}) | <a href="/history?user={u}">Historia</a></li>'
     content += "</ul>"
     return content
 
