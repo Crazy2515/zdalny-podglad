@@ -1,20 +1,33 @@
-from flask import Flask, request, send_file, jsonify, render_template_string
+from flask import Flask, request, send_file, jsonify, render_template_string, redirect, url_for
 import os
 import datetime
 import json
 
 app = Flask(__name__)
 UPLOAD_FOLDER = "screens"
-COMMAND_FILE = "command.json"
+COMMAND_FOLDER = "commands"
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(COMMAND_FOLDER, exist_ok=True)
+
+@app.route("/")
+def index():
+    users = sorted(os.listdir(UPLOAD_FOLDER))
+    links = "".join([
+        f'<li><a href="/view?user={u}">{u}</a> | <a href="/history?user={u}">Historia</a></li>'
+        for u in users
+    ])
+    return f"<h1>Użytkownicy</h1><ul>{links}</ul>"
 
 @app.route("/view")
 def view():
+    user = request.args.get("user")
+    if not user:
+        return redirect(url_for("index"))
     return render_template_string('''
         <html>
         <head>
-            <title>Zdalny Podgląd</title>
+            <title>Zdalny Podgląd - {{ user }}</title>
             <style>
                 body { background: #111; color: white; text-align: center; font-family: sans-serif; }
                 img { max-width: 90%; border: 2px solid white; margin: 10px auto; display: block; }
@@ -23,8 +36,9 @@ def view():
                 .status-box { margin-top: 20px; padding: 10px; background: #222; border: 1px solid #555; display: inline-block; }
             </style>
             <script>
+                const user = "{{ user }}";
                 async function sendCommand(action) {
-                    await fetch("/command", {
+                    await fetch("/command?user=" + user, {
                         method: "POST",
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                         body: "action=" + action
@@ -33,7 +47,7 @@ def view():
                 }
 
                 async function updateStatus() {
-                    const res = await fetch("/command");
+                    const res = await fetch("/command?user=" + user);
                     const data = await res.json();
                     document.getElementById("status").innerText = `Status: ${data.paused ? 'Zatrzymany' : 'Aktywny'} | Interwał: ${data.interval}s`;
                 }
@@ -43,8 +57,8 @@ def view():
             </script>
         </head>
         <body>
-            <h1>📸 Podgląd Ekranu</h1>
-            <img src="/latest" />
+            <h1>📸 Podgląd Ekranu - {{ user }}</h1>
+            <img src="/latest?user={{ user }}" />
 
             <div class="panel">
                 <button onclick="sendCommand('one_shot')">Zrób screena teraz</button>
@@ -58,41 +72,60 @@ def view():
             </div>
         </body>
         </html>
-    ''')
+    ''', user=user)
 
 @app.route("/latest")
 def latest():
-    files = sorted(os.listdir(UPLOAD_FOLDER))
+    user = request.args.get("user")
+    folder = os.path.join(UPLOAD_FOLDER, user)
+    if not os.path.exists(folder):
+        return "Brak screenów.", 404
+    files = sorted(os.listdir(folder))
     if not files:
         return "Brak screenów.", 404
-    return send_file(os.path.join(UPLOAD_FOLDER, files[-1]), mimetype='image/png')
+    return send_file(os.path.join(folder, files[-1]), mimetype='image/png')
 
 @app.route("/upload", methods=['POST'])
 def upload():
+    user = request.form.get("user")
+    if not user:
+        return "Brak ID użytkownika", 400
+    folder = os.path.join(UPLOAD_FOLDER, user)
+    os.makedirs(folder, exist_ok=True)
+
     file = request.files['screenshot']
     now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     filename = f"screenshot_{now}.png"
-    filepath = os.path.join(UPLOAD_FOLDER, filename)
+    filepath = os.path.join(folder, filename)
     file.save(filepath)
     return "OK"
 
 @app.route("/history")
 def history():
-    files = sorted(os.listdir(UPLOAD_FOLDER))
-    images = "".join([f'<li><a href="/screens/{f}" target="_blank">{f}</a></li>' for f in files])
-    return f"<h1>Historia Screenów</h1><ul>{images}</ul>"
+    user = request.args.get("user")
+    folder = os.path.join(UPLOAD_FOLDER, user)
+    if not os.path.exists(folder):
+        return "Brak screenów.", 404
+    files = sorted(os.listdir(folder))
+    images = "".join([f'<li><a href="/screens/{user}/{f}" target="_blank">{f}</a></li>' for f in files])
+    return f"<h1>Historia Screenów - {user}</h1><ul>{images}</ul>"
 
-@app.route("/screens/<filename>")
-def get_screen(filename):
-    return send_file(os.path.join(UPLOAD_FOLDER, filename), mimetype='image/png')
+@app.route("/screens/<user>/<filename>")
+def get_screen(user, filename):
+    return send_file(os.path.join(UPLOAD_FOLDER, user, filename), mimetype='image/png')
 
 @app.route("/command", methods=['GET', 'POST'])
 def command():
+    user = request.args.get("user")
+    if not user:
+        return "Brak ID użytkownika", 400
+    command_file = os.path.join(COMMAND_FOLDER, f"{user}.json")
+
     if request.method == 'POST':
         action = request.form.get("action")
         data = {}
-        if os.path.exists(COMMAND_FILE):
-            with open(COMMAND_FILE, "r") as f:
+        if os.path.exists(command_file):
+            with open(command_file, "r") as f:
                 data = json.load(f)
 
         if action == "pause":
@@ -106,14 +139,14 @@ def command():
         elif action == "one_shot":
             data["one_shot"] = True
 
-        with open(COMMAND_FILE, "w") as f:
+        with open(command_file, "w") as f:
             json.dump(data, f)
 
         return "OK"
     else:
-        if not os.path.exists(COMMAND_FILE):
+        if not os.path.exists(command_file):
             return jsonify({"paused": False, "interval": 5})
-        with open(COMMAND_FILE, "r") as f:
+        with open(command_file, "r") as f:
             return jsonify(json.load(f))
 
 if __name__ == '__main__':
