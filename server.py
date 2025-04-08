@@ -9,39 +9,58 @@ COMMAND_FILE = "command.json"
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Strona podglądu + panel sterowania
 @app.route("/view")
 def view():
     return render_template_string('''
         <html>
         <head>
             <title>Zdalny Podgląd</title>
-            <meta http-equiv="refresh" content="5">
             <style>
                 body { background: #111; color: white; text-align: center; font-family: sans-serif; }
                 img { max-width: 90%; border: 2px solid white; margin: 10px auto; display: block; }
                 .panel { margin-top: 20px; }
                 button { margin: 5px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
+                .status-box { margin-top: 20px; padding: 10px; background: #222; border: 1px solid #555; display: inline-block; }
             </style>
+            <script>
+                async function sendCommand(action) {
+                    await fetch("/command", {
+                        method: "POST",
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: "action=" + action
+                    });
+                    updateStatus();
+                }
+
+                async function updateStatus() {
+                    const res = await fetch("/command");
+                    const data = await res.json();
+                    document.getElementById("status").innerText = `Status: ${data.paused ? 'Zatrzymany' : 'Aktywny'} | Interwał: ${data.interval}s`;
+                }
+
+                setInterval(updateStatus, 3000);
+                window.onload = updateStatus;
+            </script>
         </head>
         <body>
             <h1>📸 Podgląd Ekranu</h1>
             <img src="/latest" />
 
             <div class="panel">
-                <form method="post" action="/command">
-                    <button name="action" value="one_shot">Zrób screena teraz</button>
-                    <button name="action" value="pause">Pauza</button>
-                    <button name="action" value="resume">Start</button>
-                    <button name="action" value="faster">Szybciej</button>
-                    <button name="action" value="slower">Wolniej</button>
-                </form>
+                <button onclick="sendCommand('one_shot')">Zrób screena teraz</button>
+                <button onclick="sendCommand('pause')">Pauza</button>
+                <button onclick="sendCommand('resume')">Start</button>
+                <button onclick="sendCommand('faster')">Szybciej</button>
+                <button onclick="sendCommand('slower')">Wolniej</button>
+            </div>
+
+            <div class="status-box" id="status">
+                Status: ładowanie...
             </div>
         </body>
         </html>
     ''')
 
-# Zwraca najnowszy screen
 @app.route("/latest")
 def latest():
     files = sorted(os.listdir(UPLOAD_FOLDER))
@@ -49,7 +68,6 @@ def latest():
         return "Brak screenów.", 404
     return send_file(os.path.join(UPLOAD_FOLDER, files[-1]), mimetype='image/png')
 
-# Upload screena
 @app.route("/upload", methods=['POST'])
 def upload():
     file = request.files['screenshot']
@@ -59,7 +77,6 @@ def upload():
     file.save(filepath)
     return "OK"
 
-# Galeria screenów
 @app.route("/history")
 def history():
     files = sorted(os.listdir(UPLOAD_FOLDER))
@@ -70,7 +87,6 @@ def history():
 def get_screen(filename):
     return send_file(os.path.join(UPLOAD_FOLDER, filename), mimetype='image/png')
 
-# Zdalna komenda
 @app.route("/command", methods=['GET', 'POST'])
 def command():
     if request.method == 'POST':
