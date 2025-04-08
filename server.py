@@ -52,9 +52,7 @@ def view():
                 <button onclick="sendCommand('resume')">Start</button>
                 <button onclick="sendCommand('faster')">Szybciej</button>
                 <button onclick="sendCommand('slower')">Wolniej</button>
-            </div>
-
-            <div class="status-box" id="status">
+        <div class="status-box" id="status">
                 Status: ładowanie...
             </div>
         </body>
@@ -119,4 +117,6 @@ def command():
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port)       </div>
+
+         
