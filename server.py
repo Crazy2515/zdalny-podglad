@@ -2,16 +2,15 @@ from flask import Flask, request, send_file, jsonify, render_template_string, re
 import os
 import datetime
 import json
-import pytz
 
 app = Flask(__name__)
 UPLOAD_FOLDER = "screens"
 COMMAND_FOLDER = "commands"
+CLIENT_DOWNLOAD_PATH = "client_download"
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(COMMAND_FOLDER, exist_ok=True)
-
-POLAND = pytz.timezone("Europe/Warsaw")
+os.makedirs(CLIENT_DOWNLOAD_PATH, exist_ok=True)
 
 @app.route("/")
 def index():
@@ -20,7 +19,14 @@ def index():
         f'<li><a href="/view?user={u}">{u}</a> | <a href="/history?user={u}">Historia</a></li>'
         for u in users
     ])
-    return f"<h1>Użytkownicy</h1><ul>{links}</ul>"
+    return f"<h1>Użytkownicy</h1><ul>{links}</ul><p><a href='/download'>⬇️ Pobierz klienta</a></p>"
+
+@app.route("/download")
+def download_client():
+    for f in os.listdir(CLIENT_DOWNLOAD_PATH):
+        if f.endswith(".exe") or f.endswith(".zip"):
+            return send_file(os.path.join(CLIENT_DOWNLOAD_PATH, f), as_attachment=True)
+    return "Brak dostępnego pliku klienta.", 404
 
 @app.route("/view")
 def view():
