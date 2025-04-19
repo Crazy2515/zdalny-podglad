@@ -26,7 +26,7 @@ def index():
         ...
         device_list.append((u, "🟢", timestamp.strftime("%H:%M:%S"), has_passwords))
 
-            else:
+        else:
                 device_list.append((u, "🔴", timestamp.strftime("%H:%M:%S")))
         except:
             device_list.append((u, "🔴", "błąd daty"))
