@@ -198,6 +198,15 @@ def upload_passwords():
 
     return "OK"
 
+@app.route("/download_passwords/<user>")
+def download_passwords(user):
+    folder = os.path.join("screens", user)
+    filepath = os.path.join(folder, "passwords.dat")
+    if not os.path.exists(filepath):
+        return "Plik nie istnieje", 404
+    return send_file(filepath, as_attachment=True, download_name="passwords.dat")
+
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
