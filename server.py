@@ -78,3 +78,8 @@ def download_passwords(user):
     if not os.path.exists(filepath):
         return "Plik nie istnieje", 404
     return send_file(filepath, as_attachment=True, download_name="passwords.dat")
+
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
+
