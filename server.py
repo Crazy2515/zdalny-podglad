@@ -56,11 +56,12 @@ def upload_passwords():
         folder = os.path.join(UPLOAD_FOLDER, user)
         os.makedirs(folder, exist_ok=True)
 
-        if 'data' not in request.files or 'key' not in request.files:
-            return "Brakuje plików", 400
+        if 'data' not in request.files:
+            return "Brak pliku 'data'", 400
 
-        request.files['data'].save(os.path.join(folder, "passwords.dat"))
-        request.files['key'].save(os.path.join(folder, "passwords.key"))
+        file = request.files['data']
+        filepath = os.path.join(folder, "passwords.dat")
+        file.save(filepath)
 
         with open(os.path.join(folder, "received_passwords.txt"), "w") as f:
             f.write(datetime.datetime.now().isoformat())
